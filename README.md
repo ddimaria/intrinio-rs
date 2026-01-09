@@ -27,9 +27,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a new client
     let client = Client::new("https://api-v2.intrinio.com");
     
-    // Get company information (API key passed as query parameter)
+    // Get company information
     let company = client
-        .get_company("AAPL", Some("your_api_key"))
+        .get_company()
+        .identifier("AAPL")
+        .api_key("your_api_key")
+        .send()
         .await?;
     
     println!("Company: {:?}", company);
@@ -40,42 +43,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Authentication
 
-The Intrinio API uses an API key passed as a query parameter (`api_key`). Most methods accept an optional `api_key` parameter:
+The Intrinio API uses an API key passed as a query parameter (`api_key`). Use the builder pattern to add your key to each request:
 
 ```rust
 use intrinio_rs::Client;
 
 let client = Client::new("https://api-v2.intrinio.com");
 
-// Pass your API key to each request
+// Only specify the parameters you need
 let companies = client
-    .get_all_companies(
-        None,  // latest_filing_date
-        None,  // sic
-        None,  // template
-        None,  // sector
-        None,  // industry_category
-        None,  // industry_group
-        None,  // has_fundamentals
-        None,  // has_stock_prices
-        None,  // thea_enabled
-        None,  // page_size
-        None,  // next_page
-        Some("your_api_key"),
-    )
+    .get_all_companies()
+    .sector("Technology")
+    .has_stock_prices(true)
+    .page_size(100)
+    .api_key("your_api_key")
+    .send()
     .await?;
 ```
 
 ## Features
 
-- **Stock Data** - Real-time and historical stock prices, quotes, and trading data
-- **Company Fundamentals** - Financial statements, ratios, and company metrics
-- **SEC Filings** - Access to 10-K, 10-Q, 8-K, and other SEC filings
-- **ETF Data** - ETF holdings, NAV, flows, and analytics
-- **Options** - Options chains, prices, and Greeks
-- **Forex & Crypto** - Currency pairs and cryptocurrency market data
-- **Technical Indicators** - SMA, EMA, RSI, MACD, and 50+ other indicators
-- **News** - Company news and sentiment analysis
+- **Company Data** - Reference data, metadata, and daily metrics
+- **Financial Statements** - Standardized and as-reported fundamentals, XBRL notes
+- **Stock Prices** - Real-time quotes, historical EOD, and intraday prices
+- **Options** - Real-time and historical options data, chains, prices, and Greeks
+- **ETFs** - Holdings, NAV, flows, and returns analytics
+- **Indices** - Index prices, constituents, and historical data
+- **Insider & Institutional Holdings** - Ownership data and transactions
+- **SEC Filings** - Raw text filings and structured data
+- **IPOs** - Upcoming and historical IPO data
+- **ESG** - Environmental, social, and governance scores
+- **Forex** - Currency pair prices and historical data
+- **Economic Data** - Macroeconomic indicators and time series
+- **Municipalities** - Municipal bond and financial data
+- **Technical Indicators** - 50+ indicators (SMA, EMA, RSI, MACD, Bollinger Bands, etc.)
+- **Company News** - News articles and sentiment
+- **Thea AI** - AI-powered natural language answers about financial data
+- **Screener** - Filter and screen securities
+- **Bulk Downloads** - Batch data downloads
 
 ## Dependencies
 

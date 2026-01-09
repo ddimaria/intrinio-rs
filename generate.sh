@@ -114,7 +114,7 @@ EOF
 
 echo "==> Generating Rust client with progenitor..."
 rm -rf .gen
-cargo progenitor -i open_api_spec_v3.json -o .gen -n intrinio-rs -v 0.1.0
+cargo progenitor -i open_api_spec_v3.json -o .gen -n intrinio-rs -v 0.1.0 --interface builder
 
 echo "==> Copying generated lib.rs to src/..."
 cp .gen/src/lib.rs src/lib.rs
