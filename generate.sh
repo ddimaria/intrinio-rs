@@ -119,6 +119,114 @@ cargo progenitor -i open_api_spec_v3.json -o .gen -n intrinio-rs -v 0.1.0 --inte
 echo "==> Copying generated lib.rs to src/..."
 cp .gen/src/lib.rs src/lib.rs
 
+echo "==> Adding API key authentication support..."
+python3 << 'PYEOF'
+import re
+
+with open('src/lib.rs', 'r') as f:
+    content = f.read()
+
+# 1. Add api_key field to Client struct
+content = content.replace(
+    '''pub struct Client {
+    pub(crate) baseurl: String,
+    pub(crate) client: reqwest::Client,
+}''',
+    '''pub struct Client {
+    pub(crate) baseurl: String,
+    pub(crate) client: reqwest::Client,
+    pub(crate) api_key: String,
+}'''
+)
+
+# 2. Replace the entire Client::new implementation to take api_key
+content = content.replace(
+    '''impl Client {
+    /// Create a new client.
+    ///
+    /// `baseurl` is the base URL provided to the internal
+    /// `reqwest::Client`, and should include a scheme and hostname,
+    /// as well as port and a path stem if applicable.
+    pub fn new(baseurl: &str) -> Self {
+        #[cfg(not(target_arch = "wasm32"))]
+        let client = {
+            let dur = ::std::time::Duration::from_secs(15u64);
+            reqwest::ClientBuilder::new()
+                .connect_timeout(dur)
+                .timeout(dur)
+        };
+        #[cfg(target_arch = "wasm32")]
+        let client = reqwest::ClientBuilder::new();
+        Self::new_with_client(baseurl, client.build().unwrap())
+    }
+
+    /// Construct a new client with an existing `reqwest::Client`,
+    /// allowing more control over its configuration.
+    ///
+    /// `baseurl` is the base URL provided to the internal
+    /// `reqwest::Client`, and should include a scheme and hostname,
+    /// as well as port and a path stem if applicable.
+    pub fn new_with_client(baseurl: &str, client: reqwest::Client) -> Self {
+        Self {
+            baseurl: baseurl.to_string(),
+            client,
+        }
+    }
+}''',
+    '''impl Client {
+    /// Create a new client with API key authentication.
+    ///
+    /// `baseurl` is the base URL provided to the internal
+    /// `reqwest::Client`, and should include a scheme and hostname,
+    /// as well as port and a path stem if applicable.
+    ///
+    /// `api_key` is your Intrinio API key which will be automatically
+    /// added to all requests as a query parameter.
+    pub fn new(baseurl: &str, api_key: impl Into<String>) -> Self {
+        #[cfg(not(target_arch = "wasm32"))]
+        let client = {
+            let dur = ::std::time::Duration::from_secs(15u64);
+            reqwest::ClientBuilder::new()
+                .connect_timeout(dur)
+                .timeout(dur)
+        };
+        #[cfg(target_arch = "wasm32")]
+        let client = reqwest::ClientBuilder::new();
+        Self::new_with_client(baseurl, client.build().unwrap(), api_key)
+    }
+
+    /// Construct a new client with an existing `reqwest::Client`,
+    /// allowing more control over its configuration.
+    ///
+    /// `baseurl` is the base URL provided to the internal
+    /// `reqwest::Client`, and should include a scheme and hostname,
+    /// as well as port and a path stem if applicable.
+    ///
+    /// `api_key` is your Intrinio API key which will be automatically
+    /// added to all requests as a query parameter.
+    pub fn new_with_client(baseurl: &str, client: reqwest::Client, api_key: impl Into<String>) -> Self {
+        Self {
+            baseurl: baseurl.to_string(),
+            client,
+            api_key: api_key.into(),
+        }
+    }
+}'''
+)
+
+# 3. Add api_key query parameter to all requests
+# Find all occurrences of ".headers(header_map)" and add api_key query before it
+content = content.replace(
+    '.headers(header_map)',
+    '.query(&progenitor_client::QueryParam::new("api_key", &client.api_key))\n                .headers(header_map)'
+)
+
+with open('src/lib.rs', 'w') as f:
+    f.write(content)
+
+print("  Done!")
+PYEOF
+
 echo "==> Cleaning up..."
 rm -rf .gen
 

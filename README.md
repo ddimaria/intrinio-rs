@@ -24,14 +24,13 @@ use intrinio_rs::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a new client
-    let client = Client::new("https://api-v2.intrinio.com");
+    // Create a new client with your API key
+    let client = Client::new("https://api-v2.intrinio.com", "YOUR_API_KEY");
     
     // Get company information
     let company = client
         .get_company()
         .identifier("AAPL")
-        .api_key("your_api_key")
         .send()
         .await?;
     
@@ -43,12 +42,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Authentication
 
-The Intrinio API uses an API key passed as a query parameter (`api_key`). Use the builder pattern to add your key to each request:
+The Intrinio API requires an API key for authentication. Pass your API key to `Client::new()` and it will be automatically added to all requests:
 
 ```rust
 use intrinio_rs::Client;
 
-let client = Client::new("https://api-v2.intrinio.com");
+let client = Client::new("https://api-v2.intrinio.com", "YOUR_API_KEY");
 
 // Only specify the parameters you need
 let companies = client
@@ -56,7 +55,6 @@ let companies = client
     .sector("Technology")
     .has_stock_prices(true)
     .page_size(100)
-    .api_key("your_api_key")
     .send()
     .await?;
 ```
