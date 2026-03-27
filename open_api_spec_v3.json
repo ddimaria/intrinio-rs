@@ -27934,8 +27934,9 @@
                         "description": "The Stock Exchange where the company's common stock is primarily traded"
                     },
                     "sic": {
-                        "type": "string",
-                        "description": "The Standard Industrial Classification (SIC) determined by the company and filed with the SEC"
+                        "type": "integer",
+                        "description": "The Standard Industrial Classification (SIC) determined by the company and filed with the SEC",
+                        "nullable": true
                     },
                     "short_description": {
                         "type": "string",

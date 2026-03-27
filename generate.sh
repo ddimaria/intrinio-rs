@@ -227,6 +227,38 @@ with open('src/lib.rs', 'w') as f:
 print("  Done!")
 PYEOF
 
+echo "==> Patching nullable array deserialization..."
+python3 << 'PYEOF2'
+with open('src/lib.rs', 'r') as f:
+    content = f.read()
+
+helper_fn = '''
+fn deserialize_null_as_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Default + serde::Deserialize<'de>,
+{
+    Ok(<::core::option::Option<T> as serde::Deserialize>::deserialize(deserializer)?.unwrap_or_default())
+}
+'''
+
+content = content.replace(
+    '#[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]',
+    '#[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty", deserialize_with = "deserialize_null_as_default")]'
+)
+
+insert_marker = 'pub mod types {'
+idx = content.find(insert_marker)
+if idx != -1:
+    end = content.find('\n', idx)
+    content = content[:end+1] + helper_fn + content[end+1:]
+
+with open('src/lib.rs', 'w') as f:
+    f.write(content)
+
+print("  Done!")
+PYEOF2
+
 echo "==> Cleaning up..."
 rm -rf .gen
 
